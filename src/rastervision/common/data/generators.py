@@ -1,8 +1,9 @@
 import numpy as np
+import codecs, json
+from os.path import exists, join
 
-from rastervision.common.utils import get_channel_stats
 from rastervision.common.settings import TRAIN, VALIDATION, TEST
-
+from rastervision.common.utils import get_channel_stats, save_json
 
 class Batch():
     def __init__(self):
@@ -66,11 +67,22 @@ class FileGenerator(Generator):
         if self.cross_validation is not None:
             self.process_cross_validation()
 
-        gen = self.make_split_generator(
-            TRAIN, target_size=(10, 10), batch_size=100, shuffle=True,
-            augment=False, normalize=False, only_xy=False)
-        batch = next(gen)
-        self.normalize_params = get_channel_stats(batch.all_x)
+        """
+        if a specific dataset's normalized parameters have already been
+        calculated, then load that file. Otherwise, calculate with small batch.
+        """
+        const_path = join(self.dataset_path, self.name+'_norm_constants.json')
+        if exists(const_path):
+            obj_text = codecs.open(const_path, 'r', encoding='utf-8').read()
+            const_list = json.loads(obj_text)
+            const_numpy = np.array(const_list)
+            self.normalize_params = (const_numpy[0], const_numpy[1])
+        else:
+            gen = self.make_split_generator(
+                TRAIN, target_size=(10, 10), batch_size=100, shuffle=True,
+                augment=False, normalize=False, only_xy=False)
+            batch = next(gen)
+            self.normalize_params = get_channel_stats(batch.all_x)
 
     def calibrate_image(self, normalized_image):
         calibrated_image = normalized_image.copy()
@@ -250,3 +262,14 @@ class FileGenerator(Generator):
         split_gen = map(transform_img_batch, img_batch_gen)
 
         return split_gen
+
+    def normalize_constants(self, datasets_path):
+        gen = self.make_split_generator(
+            TRAIN, target_size=(10, 10), batch_size=1000, shuffle=True,
+            augment=False, normalize=False, only_xy=False)
+        batch = next(gen)
+        means, stds = get_channel_stats(batch.all_x)
+        const_dict = {'means': means.tolist(), 'stds': stds.tolist()}
+        const_path = join(datasets_path, self.name+'_norm_constants.json')
+        json.dump(const_dict, codecs.open(const_path, 'w', encoding='utf-8'), \
+                  separators=(',', ':'), sort_keys=True, indent=4)

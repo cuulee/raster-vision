@@ -119,6 +119,7 @@ class VaihingenImageFileGenerator(VaihingenFileGenerator):
                 img_batch[:, :, :, 7:])
         return batch
 
+
 class VaihingenNumpyFileGenerator(VaihingenFileGenerator):
     """
     A data generator for the Vaihingen dataset that creates batches from

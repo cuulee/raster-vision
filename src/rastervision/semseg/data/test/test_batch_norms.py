@@ -1,17 +1,11 @@
 import unittest
 
-import numpy as np
-from os.path import join
-
 from rastervision.semseg.data.potsdam import (PotsdamNumpyFileGenerator,
-    PotsdamImageFileGenerator)
+                                              PotsdamImageFileGenerator)
 from rastervision.common.utils import get_channel_stats
-from rastervision.common.settings import datasets_path
-from rastervision.common.settings import (
-    TRAIN, VALIDATION, TEST
-)
-
+from rastervision.common.settings import datasets_path, TRAIN
 PROCESSED_POTSDAM = 'isprs/processed_potsdam'
+
 
 class NormalizationTestCase(unittest.TestCase):
     def test_numpy_potsdam_batch(self):
@@ -38,6 +32,7 @@ class NormalizationTestCase(unittest.TestCase):
         # passes when mean = 0 and stds = 1 with an error of +/- 0.25.
         self.assertTrue((means > -.25).all() and (means < .25).all())
         self.assertTrue((stds > .75).all() and (stds < 1.25).all())
+
 
 if __name__ == '__main__':
     unittest.main()

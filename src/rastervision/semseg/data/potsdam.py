@@ -4,7 +4,7 @@ import numpy as np
 
 from rastervision.common.utils import (
     save_img, load_img, get_img_size, _makedirs,
-    save_numpy_array, get_channel_stats, save_json)
+    save_numpy_array)
 from rastervision.common.settings import (
     TRAIN, VALIDATION, TEST
 )

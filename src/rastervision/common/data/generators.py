@@ -1,9 +1,11 @@
 import numpy as np
-import codecs, json
+import codecs
+import json
 from os.path import exists, join
 
 from rastervision.common.settings import TRAIN, VALIDATION, TEST
-from rastervision.common.utils import get_channel_stats, save_json
+from rastervision.common.utils import get_channel_stats
+
 
 class Batch():
     def __init__(self):
@@ -271,5 +273,5 @@ class FileGenerator(Generator):
         means, stds = get_channel_stats(batch.all_x)
         const_dict = {'means': means.tolist(), 'stds': stds.tolist()}
         const_path = join(datasets_path, self.name+'_norm_constants.json')
-        json.dump(const_dict, codecs.open(const_path, 'w', encoding='utf-8'), \
+        json.dump(const_dict, codecs.open(const_path, 'w', encoding='utf-8'),
                   separators=(',', ':'), sort_keys=True, indent=4)

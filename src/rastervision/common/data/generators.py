@@ -69,16 +69,16 @@ class FileGenerator(Generator):
         if self.cross_validation is not None:
             self.process_cross_validation()
 
-        """
-        if a specific dataset's normalized parameters have already been
-        calculated, then load that file. Otherwise, calculate with small batch.
-        """
-        const_path = join(self.dataset_path, self.name+'_norm_constants.json')
-        if exists(const_path):
-            obj_text = codecs.open(const_path, 'r', encoding='utf-8').read()
-            const_list = json.loads(obj_text)
-            const_numpy = np.array(const_list)
-            self.normalize_params = (const_numpy[0], const_numpy[1])
+        # If a dataset's normalized parameters have already been
+        # calculated, load its json file. Otherwise, calculate parameters
+        # with a small batch.
+        params_path = join(self.dataset_path,
+                          self.name+'_normalize_params.json')
+        if exists(params_path):
+            obj_text = codecs.open(params_path, 'r', encoding='utf-8').read()
+            params_list = json.loads(obj_text)
+            params_numpy = np.array(params_list)
+            self.normalize_params = (params_numpy[0], params_numpy[1])
         else:
             gen = self.make_split_generator(
                 TRAIN, target_size=(10, 10), batch_size=100, shuffle=True,
@@ -265,13 +265,13 @@ class FileGenerator(Generator):
 
         return split_gen
 
-    def normalize_constants(self, datasets_path):
+    def write_channel_stats(self, datasets_path):
         gen = self.make_split_generator(
             TRAIN, target_size=(10, 10), batch_size=1000, shuffle=True,
             augment=False, normalize=False, only_xy=False)
         batch = next(gen)
         means, stds = get_channel_stats(batch.all_x)
-        const_dict = {'means': means.tolist(), 'stds': stds.tolist()}
-        const_path = join(datasets_path, self.name+'_norm_constants.json')
-        json.dump(const_dict, codecs.open(const_path, 'w', encoding='utf-8'),
+        param_dict = {'means': means.tolist(), 'stds': stds.tolist()}
+        param_path = join(datasets_path, self.name+'_normalize_params.json')
+        json.dump(param_dict, codecs.open(param_path, 'w', encoding='utf-8'),
                   separators=(',', ':'), sort_keys=True, indent=4)

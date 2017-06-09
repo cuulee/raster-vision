@@ -1,4 +1,5 @@
 import numpy as np
+from skimage import transform
 
 from rastervision.common.utils import get_channel_stats
 from rastervision.common.settings import TRAIN, VALIDATION, TEST
@@ -204,17 +205,44 @@ class FileGenerator(Generator):
         return batch_x
 
     def augment_img_batch(self, img_batch):
-        nb_rotations = np.random.randint(0, 4)
+        imgs = []
+        for sample_ind in range(img_batch.shape[0]):
+            img = img_batch[sample_ind, :, :, :]
 
-        img_batch = np.transpose(img_batch, [1, 2, 3, 0])
-        img_batch = np.rot90(img_batch, nb_rotations)
-        img_batch = np.transpose(img_batch, [3, 0, 1, 2])
+            if np.random.uniform() > 0.5:
+                img = np.flip(img, axis=0)
 
-        if np.random.uniform() > 0.5:
-            img_batch = np.flip(img_batch, axis=1)
-        if np.random.uniform() > 0.5:
-            img_batch = np.flip(img_batch, axis=2)
+            if np.random.uniform() > 0.5:
+                img = np.flip(img, axis=1)
 
+            nb_rotations = np.random.randint(0, 4)
+            img = np.rot90(img, nb_rotations)
+
+            # skimage requires that float images have values
+            # in [-1, 1] so we have to scale and then unscale the image to
+            # achieve this.
+            max_val = np.max(np.absolute(img.ravel()))
+
+            img = img / max_val
+            nb_rows, nb_cols = img.shape[0:2]
+            max_trans_ratio = 0.1
+            trans_row_bound = int(nb_rows * max_trans_ratio)
+            trans_col_bound = int(nb_cols * max_trans_ratio)
+            translation = (
+                np.random.randint(-trans_row_bound, trans_row_bound),
+                np.random.randint(-trans_col_bound, trans_col_bound)
+            )
+            tf = transform.SimilarityTransform(translation=translation)
+            img = transform.warp(img, tf, mode='reflect')
+
+            degrees = np.random.uniform(0, 360)
+            img = transform.rotate(img, degrees, mode='reflect')
+
+            img = img * max_val
+
+            imgs.append(np.expand_dims(img, axis=0))
+
+        img_batch = np.concatenate(imgs, axis=0)
         return img_batch
 
     def make_split_generator(self, split, target_size=None,
